@@ -1,5 +1,6 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import PIL.Image
 import pypdf
 import io
@@ -406,13 +407,23 @@ def main():
 
                 with st.spinner("Processando documentos..."):
                     try:
-                        genai.configure(api_key=api_key)
-                        modelo = genai.GenerativeModel(
-                            model_name="gemini-2.0-flash",
-                            system_instruction=SYSTEM_PROMPT
+                        cliente = genai.Client(api_key=api_key)
+                        partes_conteudo = []
+                        for img in imagens:
+                            buf = io.BytesIO()
+                            img.save(buf, format="PNG")
+                            partes_conteudo.append(
+                                types.Part.from_bytes(data=buf.getvalue(), mime_type="image/png")
+                            )
+                        partes_conteudo.append(types.Part.from_text(text=prompt_inicial))
+                        resposta = cliente.models.generate_content(
+                            model="gemini-2.0-flash",
+                            contents=partes_conteudo,
+                            config=types.GenerateContentConfig(
+                                system_instruction=SYSTEM_PROMPT,
+                                max_output_tokens=8192
+                            )
                         )
-                        partes = imagens + [prompt_inicial]
-                        resposta = modelo.generate_content(partes)
                         reply = resposta.text
                     except Exception as e:
                         st.error(f"Erro ao conectar com Gemini: {e}")
@@ -454,19 +465,31 @@ a estrutura definida no sistema, do cabeçalho até a CONCLUSÃO FINAL."""
                 with st.chat_message("assistant"):
                     with st.spinner("Gerando parecer completo..."):
                         try:
-                            genai.configure(api_key=api_key)
-                            modelo = genai.GenerativeModel(
-                                model_name="gemini-2.0-flash",
-                                system_instruction=SYSTEM_PROMPT
-                            )
-                            historico = [
-                                {"role": m["role"], "parts": [m["texto"]]}
+                            cliente = genai.Client(api_key=api_key)
+                            historico_api = [
+                                types.Content(
+                                    role=m["role"],
+                                    parts=[types.Part.from_text(text=m["texto"])]
+                                )
                                 for m in st.session_state.mensagens[:-1]
                             ]
-                            chat = modelo.start_chat(history=historico)
-                            resposta = chat.send_message(
-                                [*st.session_state.imagens_docs, prompt_final]
+                            partes_final = []
+                            for img in st.session_state.imagens_docs:
+                                buf = io.BytesIO()
+                                img.save(buf, format="PNG")
+                                partes_final.append(
+                                    types.Part.from_bytes(data=buf.getvalue(), mime_type="image/png")
+                                )
+                            partes_final.append(types.Part.from_text(text=prompt_final))
+                            chat = cliente.chats.create(
+                                model="gemini-2.0-flash",
+                                config=types.GenerateContentConfig(
+                                    system_instruction=SYSTEM_PROMPT,
+                                    max_output_tokens=8192
+                                ),
+                                history=historico_api
                             )
+                            resposta = chat.send_message(partes_final)
                             relatorio = resposta.text
                         except Exception as e:
                             st.error(f"Erro ao gerar relatório: {e}")
@@ -485,16 +508,22 @@ a estrutura definida no sistema, do cabeçalho até a CONCLUSÃO FINAL."""
                 with st.chat_message("assistant"):
                     with st.spinner("Processando..."):
                         try:
-                            genai.configure(api_key=api_key)
-                            modelo = genai.GenerativeModel(
-                                model_name="gemini-2.0-flash",
-                                system_instruction=SYSTEM_PROMPT
-                            )
-                            historico = [
-                                {"role": m["role"], "parts": [m["texto"]]}
+                            cliente = genai.Client(api_key=api_key)
+                            historico_api = [
+                                types.Content(
+                                    role=m["role"],
+                                    parts=[types.Part.from_text(text=m["texto"])]
+                                )
                                 for m in st.session_state.mensagens[:-1]
                             ]
-                            chat = modelo.start_chat(history=historico)
+                            chat = cliente.chats.create(
+                                model="gemini-2.0-flash",
+                                config=types.GenerateContentConfig(
+                                    system_instruction=SYSTEM_PROMPT,
+                                    max_output_tokens=8192
+                                ),
+                                history=historico_api
+                            )
                             resposta = chat.send_message(entrada)
                             reply = resposta.text
                         except Exception as e:
