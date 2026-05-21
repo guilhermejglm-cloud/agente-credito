@@ -408,7 +408,7 @@ def main():
                     try:
                         genai.configure(api_key=api_key)
                         modelo = genai.GenerativeModel(
-                            model_name="gemini-1.5-flash",
+                            model_name="gemini-2.0-flash",
                             system_instruction=SYSTEM_PROMPT
                         )
                         partes = imagens + [prompt_inicial]
@@ -456,7 +456,7 @@ a estrutura definida no sistema, do cabeçalho até a CONCLUSÃO FINAL."""
                         try:
                             genai.configure(api_key=api_key)
                             modelo = genai.GenerativeModel(
-                                model_name="gemini-1.5-flash",
+                                model_name="gemini-2.0-flash",
                                 system_instruction=SYSTEM_PROMPT
                             )
                             historico = [
@@ -487,7 +487,7 @@ a estrutura definida no sistema, do cabeçalho até a CONCLUSÃO FINAL."""
                         try:
                             genai.configure(api_key=api_key)
                             modelo = genai.GenerativeModel(
-                                model_name="gemini-1.5-flash",
+                                model_name="gemini-2.0-flash",
                                 system_instruction=SYSTEM_PROMPT
                             )
                             historico = [
